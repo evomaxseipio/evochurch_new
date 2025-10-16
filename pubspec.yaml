@@ -1,0 +1,49 @@
+name: evochurch_new
+description: Church management application
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management (SIN annotations)
+  riverpod: ^2.5.1
+  flutter_riverpod: ^2.5.1
+  hooks_riverpod: ^2.5.1
+  flutter_hooks: ^0.20.5
+
+  # Backend
+  supabase_flutter: ^2.0.0
+
+  # Routing
+  go_router: ^14.0.0
+
+  # UI Components
+  data_table_2: ^2.5.11
+  fl_chart: ^0.68.0
+
+  # Utils
+  intl: ^0.19.0
+  shared_preferences: ^2.2.2
+  font_awesome_flutter: ^10.10.0
+  toggle_switch: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+  
+  # Code Generation
+  build_runner: ^2.4.11
+  riverpod_generator: ^2.4.0
+  riverpod_lint: ^2.3.10
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
