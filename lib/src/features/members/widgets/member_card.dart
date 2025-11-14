@@ -26,7 +26,7 @@ class MemberCard extends ConsumerWidget {
       child: InkWell(
         onTap: () {
           ref.read(selectedMemberProvider.notifier).select(member);
-          context.push('/members/profile');
+          context.go('/members/profile');
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -56,7 +56,7 @@ class MemberCard extends ConsumerWidget {
       ),
       child: Center(
         child: Text(
-          (member.firstName?[0] ?? 'M').toUpperCase(),
+          (member.firstName[0]).toUpperCase(),
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -75,7 +75,7 @@ class MemberCard extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                '${member.firstName ?? ''} ${member.lastName ?? ''}'.trim(),
+                '${member.firstName} ${member.lastName}'.trim(),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -202,13 +202,13 @@ class MemberCard extends ConsumerWidget {
   void _handleAction(BuildContext context, WidgetRef ref, String action) {
     switch (action) {
       case 'view':
-        context.push('/members/profile');
+        context.go('/members/profile');
         break;
       case 'edit':
-        context.push('/members/edit');
+        context.go('/members/edit');
         break;
       case 'finances':
-        context.push('/members/finances');
+        context.go('/members/finances');
         break;
       case 'delete':
         _showDeleteDialog(context);

@@ -31,10 +31,10 @@ class MemberList extends HookConsumerWidget {
               const SizedBox(height: 32),
 
               MemberStatsCards(membersAsync: membersAsync),
-              const SizedBox(height: 32),
+              const SizedBox(height: 10),
 
-              MemberSearchBar(searchQuery: searchQuery),
-              const SizedBox(height: 24),
+              // MemberSearchBar(searchQuery: searchQuery),
+              // const SizedBox(height: 24),
 
               // Separación: Desktop usa DataTable, Mobile usa ListView
               isMobile
@@ -43,7 +43,6 @@ class MemberList extends HookConsumerWidget {
                       searchQuery: searchQuery,
                     )
                   : MemberListDesktop(
-                      membersAsync: membersAsync,
                       searchQuery: searchQuery,
                     ),
             ],

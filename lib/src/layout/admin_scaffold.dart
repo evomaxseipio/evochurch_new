@@ -26,6 +26,9 @@ class AdminScaffold extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scaffoldKey = useMemoized(() => GlobalKey<ScaffoldState>());
 
+    // Watch providers at the top level to avoid issues
+    final isCollapsed = ref.watch(sidebarCollapsedProvider);
+
     // Breakpoints responsivos
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width >= 1024;
@@ -35,44 +38,46 @@ class AdminScaffold extends HookConsumerWidget {
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF5F7FA),
-      drawer: (isMobile || isTablet) ? const SideMenu() : null,
-      body: Row(
-        children: [
-          // Sidebar animado solo en desktop
-          if (isDesktop)
-            Consumer(
-              builder: (context, ref, child) {
-                final isCollapsed = ref.watch(sidebarCollapsedProvider);
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  width: isCollapsed ? 70 : 260,
-                  child: SideMenu(isCollapsed: isCollapsed),
-                );
-              },
-            ),
+      drawer: (isMobile || isTablet)
+          ? Drawer(
+              width: isMobile ? 280 : 320, // Ancho máximo: 280px mobile, 320px tablet
+              child: const SideMenu(),
+            )
+          : null,
+      body: SafeArea(
+        child: Row(
+          children: [
+            // Sidebar animado solo en desktop
+            if (isDesktop)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: isCollapsed ? 70 : 260,
+                child: SideMenu(isCollapsed: isCollapsed),
+              ),
 
-          // Main Content
-          Expanded(
-            child: Column(
-              children: [
-                // Top Bar
-                _buildTopBar(context, scaffoldKey, isDesktop),
+            // Main Content
+            Expanded(
+              child: Column(
+                children: [
+                  // Top Bar
+                  _buildTopBar(context, scaffoldKey, isDesktop, ref),
 
-                // Body Content
-                Expanded(
-                  child: body,
-                ),
-              ],
+                  // Body Content
+                  Expanded(
+                    child: body,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTopBar(BuildContext context,
-      GlobalKey<ScaffoldState> scaffoldKey, bool isDesktop) {
+      GlobalKey<ScaffoldState> scaffoldKey, bool isDesktop, WidgetRef ref) {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 768;
 
@@ -89,7 +94,7 @@ class AdminScaffold extends HookConsumerWidget {
       ),
       child: isMobile
           ? _buildMobileTopBar(context, scaffoldKey)
-          : _buildDesktopTopBar(context, scaffoldKey, isDesktop),
+          : _buildDesktopTopBar(context, scaffoldKey, isDesktop, ref),
     );
   }
 
@@ -138,21 +143,18 @@ class AdminScaffold extends HookConsumerWidget {
   }
 
   Widget _buildDesktopTopBar(BuildContext context,
-      GlobalKey<ScaffoldState> scaffoldKey, bool isDesktop) {
+      GlobalKey<ScaffoldState> scaffoldKey, bool isDesktop, WidgetRef ref) {
+    final isCollapsed = ref.watch(sidebarCollapsedProvider);
+
     return Row(
       children: [
         // Botón toggle para sidebar en desktop
         if (isDesktop)
-          Consumer(
-            builder: (context, ref, child) {
-              final isCollapsed = ref.watch(sidebarCollapsedProvider);
-              return IconButton(
-                icon: Icon(isCollapsed ? Icons.menu : Icons.menu_open),
-                onPressed: () {
-                  ref.read(sidebarCollapsedProvider.notifier).state =
-                      !isCollapsed;
-                },
-              );
+          IconButton(
+            icon: Icon(isCollapsed ? Icons.menu : Icons.menu_open),
+            onPressed: () {
+              ref.read(sidebarCollapsedProvider.notifier).state =
+                  !isCollapsed;
             },
           )
         else if (!isDesktop)

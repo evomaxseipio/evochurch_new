@@ -53,7 +53,7 @@ class InformationCard extends StatelessWidget {
 }
 
 // Helper method to create information cards with consistent styling
-Widget buildInformationCard(String title, List<Widget> children) {
+Widget buildInformationCard( List<Widget> children, {Color? backgroundColor, String title = '', Widget? header}) {
   return Card(
     margin: EdgeInsets.zero,
     child: Padding(
@@ -61,7 +61,7 @@ Widget buildInformationCard(String title, List<Widget> children) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          header ?? Text(
             title,
             style: const TextStyle(
               fontSize: 18,

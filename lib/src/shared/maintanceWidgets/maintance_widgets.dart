@@ -2,11 +2,11 @@
 import 'package:evochurch_new/src/shared/text/index_text.dart';
 import 'package:evochurch_new/src/shared/utils/utils_index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 
-final Map<String, String?> _dropdownValues = {};
 // Side Bar Items
 Widget buildSidebarItem(String title, String selectedItem, IconData icon,
     {required VoidCallback onTap, bool isDestructive = false}) {
@@ -138,7 +138,7 @@ Widget buildEditableField(
                 }
 
                 if (field == 'email' &&
-                    !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value!)) {
+                    !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                   return 'Please enter a valid email address';
                 }
 
@@ -209,84 +209,157 @@ Widget buildDateField(String label, String field, BuildContext context,
   );
 }
 
-/*
+
 
 Widget buildDropdownField(
-    String label, String field, Map<String, TextEditingController> controllers,
-    {MembersViewModel? viewModel, bool isRequired = true, isReadOnly = false}) {
-  // final theme = Theme.of(context);
-
-  String? initialValue = controllers[field]?.text.isNotEmpty == true
-      ? controllers[field]?.text
-      : _dropdownValues[field];
+    String label, 
+    String field, 
+    Map<String, TextEditingController> controllers,
+    {required List<String> items, 
+    bool isRequired = true, 
+    bool isReadOnly = false}) {
+  
+  final controller = controllers[field];
+  if (controller == null) {
+    return const SizedBox.shrink();
+  }
 
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
-        (splitCamelCase(label).capitalize),
+        splitCamelCase(label.capitalize),
         style: TextStyle(
           color: Colors.grey[600],
           fontSize: 14,
         ),
       ),
-      // const SizedBox(height: 4),
-      Padding(
-          padding: const EdgeInsets.symmetric(vertical: 0),
-          child: StatefulBuilder(
-            builder: (context, setState) => DropdownButtonFormField<String>(
-              initialValue: initialValue ?? _dropdownValues[field],
-
-              // isExpanded: true,
-              isDense: true,
-              hint: Text('Select $label'),
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              decoration: InputDecoration(
-                enabled: isReadOnly ? false : true,
-                suffixIconConstraints: const BoxConstraints(minWidth: 30),
-                isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                errorStyle: const TextStyle(
-                    fontSize: 14, height: 0.7, color: Colors.red),
-              ),
-              items: _getDropdownItems(field, viewModel: viewModel)
-                  .map((item) =>
-                      DropdownMenuItem(value: item, child: Text(item)))
-                  .toList(),
-              onChanged: (value) {
-                try {
-                  if (value != null) {
-                    controllers[field]!.text = value;
-                    setState(() => _dropdownValues[field] = value);
-                  }
-                } catch (e) {
-                  debugPrint(e.toString());
-                }
-              },
-              validator: isRequired
-                  ? (value) => value == null
-                      ? 'Please select ${splitCamelCase(label.capitalize)}'
-                      : null
-                  : null,
-            ),
-          )),
+      _DropdownFieldHook(
+        field: field,
+        label: label,
+        controller: controller,
+        items: items,
+        isRequired: isRequired,
+        isReadOnly: isReadOnly,
+      ),
     ],
   );
 }
 
+class _DropdownFieldHook extends HookWidget {
+  final String field;
+  final String label;
+  final TextEditingController controller;
+  final List<String> items;
+  final bool isRequired;
+  final bool isReadOnly;
+
+  const _DropdownFieldHook({
+    required this.field,
+    required this.label,
+    required this.controller,
+    required this.items,
+    required this.isRequired,
+    required this.isReadOnly,
+  });
+
+  OutlineInputBorder _buildBorder(Color color) {
+    return OutlineInputBorder(
+      borderSide: BorderSide(color: color),
+      borderRadius: BorderRadius.circular(4),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    final selectedValue = useState<String?>(
+      controller.text.isNotEmpty && items.contains(controller.text)
+          ? controller.text
+          : null,
+    );
+
+    useEffect(() {
+      void listener() {
+        final newValue = controller.text;
+        if (newValue.isNotEmpty && 
+            items.contains(newValue) && 
+            newValue != selectedValue.value) {
+          selectedValue.value = newValue;
+        }
+      }
+
+      controller.addListener(listener);
+      return () => controller.removeListener(listener);
+    }, [controller]);
+
+    return DropdownButtonFormField<String>(
+      value: selectedValue.value,
+      hint: Text(
+        'Select $label',
+        style: theme.inputDecorationTheme.hintStyle ??
+            theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+      ),
+      isExpanded: true,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurface,
+      ),
+      decoration: InputDecoration(
+        suffixIconConstraints: const BoxConstraints(minWidth: 30),
+        filled: true,
+        fillColor: theme.inputDecorationTheme.fillColor ?? 
+                   theme.colorScheme.surface,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 13, 
+          vertical: 11,
+        ),
+        errorStyle: theme.inputDecorationTheme.errorStyle ??
+            const TextStyle(fontSize: 14, height: 0.7, color: Colors.red),
+        enabledBorder: _buildBorder(
+          theme.inputDecorationTheme.enabledBorder?.borderSide.color ??
+              theme.colorScheme.outline,
+        ),
+        focusedBorder: _buildBorder(
+          theme.inputDecorationTheme.focusedBorder?.borderSide.color ??
+              theme.colorScheme.primary,
+        ),
+        errorBorder: _buildBorder(
+          theme.inputDecorationTheme.errorBorder?.borderSide.color ??
+              theme.colorScheme.error,
+        ),
+        focusedErrorBorder: _buildBorder(
+          theme.inputDecorationTheme.focusedErrorBorder?.borderSide.color ??
+              theme.colorScheme.error,
+        ),
+      ),
+      items: items
+          .map((item) => DropdownMenuItem(
+                value: item,
+                child: Text(item),
+              ))
+          .toList(),
+      onChanged: isReadOnly
+          ? null
+          : (value) {
+              if (value != null) {
+                selectedValue.value = value;
+                controller.text = value;
+              }
+            },
+      validator: isRequired
+          ? (value) => value == null
+              ? 'Please enter $label'
+              : null
+          : null,
+      dropdownColor: theme.inputDecorationTheme.fillColor ?? 
+                     theme.colorScheme.surface,
+    );
+  }
+}
+/*
 Widget buildDropdownFieldNew<T>({
   required String label,
   required String field,
@@ -481,3 +554,4 @@ Widget buildSwitchTile(
     ],
   );
 }
+

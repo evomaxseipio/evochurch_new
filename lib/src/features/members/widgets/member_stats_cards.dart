@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shimmer/shimmer.dart';
+import '../../../shared/utils/responsive_utils.dart';
 import '../models/member_model.dart';
 
 class MemberStatsCards extends ConsumerWidget {
@@ -26,20 +28,17 @@ class MemberStatsCards extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final crossAxisCount = width < 768
-            ? 2
-            : width < 1024
-                ? 3
-                : 4;
-        final childAspectRatio = width < 768 ? 1.5 : 2.6;
+        final crossAxisCount = ResponsiveUtils.getGridColumns(context);
+        final isMobile = ResponsiveUtils.isMobile(context);
+        final isTablet = ResponsiveUtils.isTablet(context);
+        final childAspectRatio = isMobile ? 1.4 : isTablet ? 1.9 : 2.3;
 
         return GridView.count(
           crossAxisCount: crossAxisCount,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
           childAspectRatio: childAspectRatio,
           children: [
             _StatCard(
@@ -83,20 +82,17 @@ class MemberStatsCards extends ConsumerWidget {
   Widget _buildLoadingGrid() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final crossAxisCount = width < 768
-            ? 2
-            : width < 1024
-                ? 3
-                : 4;
-        final childAspectRatio = width < 768 ? 1.5 : 2.6;
+        final crossAxisCount = ResponsiveUtils.getGridColumns(context);
+        final isMobile = ResponsiveUtils.isMobile(context);
+        final isTablet = ResponsiveUtils.isTablet(context);
+        final childAspectRatio = isMobile ? 1.4 : isTablet ? 1.9 : 2.3;
 
         return GridView.count(
           crossAxisCount: crossAxisCount,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
           childAspectRatio: childAspectRatio,
           children: List.generate(4, (index) => const _LoadingCard()),
         );
@@ -110,7 +106,7 @@ class MemberStatsCards extends ConsumerWidget {
     final inactiveMembers = members.where((m) => m.isActive == false).length;
 
     // TODO: Implement proper logic to check members created this month
-    final newThisMonth = 0;
+    const newThisMonth = 0;
 
     return {
       'total': totalMembers,
@@ -140,76 +136,133 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    final isTablet = ResponsiveUtils.isTablet(context);
+    
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.grey.shade200, width: 1),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [color, color.withValues(alpha: 0.7)],
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withValues(alpha: 0.05),
+              color.withValues(alpha: 0.02),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(isMobile ? 10 : isTablet ? 12 : 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: isMobile ? 32 : isTablet ? 36 : 40,
+                    height: isMobile ? 32 : isTablet ? 36 : 40,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    borderRadius: BorderRadius.circular(10),
+                    child: Icon(
+                      icon,
+                      color: color,
+                      size: isMobile ? 16 : isTablet ? 18 : 20,
+                    ),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 20),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.arrow_upward,
-                          size: 12, color: Colors.green.shade600),
-                      const SizedBox(width: 2),
-                      Text(
-                        trend,
+                  if (trend.isNotEmpty && trend != 'This Month')
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 5 : 6,
+                        vertical: isMobile ? 2 : 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: trend.startsWith('+')
+                            ? Colors.green.shade50
+                            : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            trend.startsWith('+') ? Icons.arrow_upward : Icons.arrow_downward,
+                            size: isMobile ? 9 : 10,
+                            color: trend.startsWith('+')
+                                ? Colors.green.shade700
+                                : Colors.red.shade700,
+                          ),
+                          SizedBox(width: 2),
+                          Text(
+                            trend,
+                            style: TextStyle(
+                              fontSize: isMobile ? 8 : 9,
+                              fontWeight: FontWeight.w600,
+                              color: trend.startsWith('+')
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (trend == 'This Month')
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 5 : 6,
+                        vertical: isMobile ? 2 : 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'New',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: isMobile ? 8 : 9,
                           fontWeight: FontWeight.w600,
-                          color: Colors.green.shade600,
+                          color: Colors.blue.shade700,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                ],
+              ),
+              SizedBox(height: isMobile ? 8 : 10),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: isMobile ? 10 : isTablet ? 11 : 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+              SizedBox(height: isMobile ? 4 : 6),
+              Flexible(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: isMobile ? 20 : isTablet ? 24 : 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade900,
+                    height: 1.0,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -221,57 +274,65 @@ class _LoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    final isTablet = ResponsiveUtils.isTablet(context);
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.grey.shade200, width: 1),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(10),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey.shade300,
+        highlightColor: Colors.grey.shade100,
+        child: Padding(
+          padding: EdgeInsets.all(isMobile ? 12 : isTablet ? 14 : 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: isMobile ? 36 : isTablet ? 40 : 44,
+                    height: isMobile ? 36 : isTablet ? 40 : 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                ),
-                Container(
-                  width: 60,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(6),
+                  Container(
+                    width: isMobile ? 40 : isTablet ? 45 : 50,
+                    height: isMobile ? 18 : isTablet ? 20 : 22,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
+                ],
+              ),
+              SizedBox(height: isMobile ? 10 : 12),
+              Container(
+                width: isMobile ? 70 : isTablet ? 80 : 90,
+                height: isMobile ? 11 : isTablet ? 12 : 13,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: 80,
-              height: 12,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(6),
               ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 20,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(6),
+              SizedBox(height: isMobile ? 6 : 8),
+              Container(
+                width: isMobile ? 50 : isTablet ? 60 : 70,
+                height: isMobile ? 22 : isTablet ? 26 : 28,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

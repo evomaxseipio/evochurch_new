@@ -133,23 +133,24 @@ class Member {
       );
 
   factory Member.fromJson(Map<String, dynamic> json) => Member(
-        memberId: json["memberId"],
-        churchId: json["churchId"],
-        firstName: json["firstName"],
-        lastName: json["lastName"],
-        nickName: json["nickName"],
-        dateOfBirth: DateTime.parse(json["dateOfBirth"]),
-        gender: json["gender"],
-        maritalStatus: json["maritalStatus"],
-        nationality: json["nationality"],
-        idType: json["idType"],
-        idNumber: json["idNumber"],
-        isActive: json["isActive"],
-        isMember: json["isMember"],
-        membershipRole: json["membershipRole"],
-        bio: json["bio"],
-        address: AddressModel.fromJson(json["address"]),
-        contact: ContactModel.fromJson(json["contact"]),
+        memberId: json["memberId"] ?? json["member_id"] ?? '',
+        churchId: json["churchId"] ?? json["church_id"] ?? 0,
+        firstName: json["firstName"] ?? json["first_name"] ?? '',
+        lastName: json["lastName"] ?? json["last_name"] ?? '',
+        nickName: json["nickName"] ?? json["nick_name"] ?? '',
+        dateOfBirth: DateTime.parse(
+            json["dateOfBirth"] ?? json["date_of_birth"] ?? DateTime.now().toString()),
+        gender: json["gender"] ?? '',
+        maritalStatus: json["maritalStatus"] ?? json["marital_status"] ?? '',
+        nationality: json["nationality"] ?? '',
+        idType: json["idType"] ?? json["id_type"] ?? '',
+        idNumber: json["idNumber"] ?? json["id_number"] ?? '',
+        isActive: json["isActive"] ?? json["is_active"] ?? true,
+        isMember: json["isMember"] ?? json["is_member"] ?? false,
+        membershipRole: json["membershipRole"] ?? json["membership_role"] ?? 'Member',
+        bio: json["bio"] ?? '',
+        address: AddressModel.fromJson(json["address"] ?? {}),
+        contact: ContactModel.fromJson(json["contact"] ?? {}),
       );
 
   Map<String, dynamic> toJson() => {

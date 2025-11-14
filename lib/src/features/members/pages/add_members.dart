@@ -3,6 +3,7 @@
 import 'package:evochurch_new/src/features/members/models/address_model.dart';
 import 'package:evochurch_new/src/features/members/models/contact_model.dart';
 import 'package:evochurch_new/src/features/members/widgets/personal_infomation_card.dart';
+import 'package:evochurch_new/src/features/members/widgets/section_header.dart';
 import 'package:evochurch_new/src/shared/button/button.dart';
 import 'package:evochurch_new/src/shared/constants/enum.dart';
 import 'package:evochurch_new/src/shared/constants/sizedbox.dart';
@@ -149,7 +150,12 @@ void callAddEmployeeModal(BuildContext context, WidgetRef ref) {
 
                 // SECCIÓN 2: INFORMACIÓN DE DIRECCIÓN
                 buildInformationCard(
-                  'Address Information',
+                  header: sectionHeader(
+                    context,
+                    icon: Icons.location_on_outlined,
+                    title: 'Address Information',
+                    subtitle: 'Residential details',
+                  ),
                   [
                     // Fila 1 de dirección
                     buildResponsiveRow([
@@ -187,7 +193,12 @@ void callAddEmployeeModal(BuildContext context, WidgetRef ref) {
 
                 // SECCIÓN 3: INFORMACIÓN DE CONTACTO
                 buildInformationCard(
-                  'Contact Information',
+                  header: sectionHeader(
+                    context,
+                    icon: Icons.contact_phone_outlined,
+                    title: 'Contact Information',
+                    subtitle: 'Communication details',
+                  ),
                   [
                     buildResponsiveRow([
                       buildEditableField(

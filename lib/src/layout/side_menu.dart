@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../features/auth/providers/auth_provider.dart';
 
 // Provider para trackear la ruta actual
 final currentRouteProvider = StateProvider<String>((ref) => '/');
@@ -188,9 +189,11 @@ class SideMenu extends HookConsumerWidget {
                       IconButton(
                         icon: Icon(Icons.logout,
                             color: Colors.grey.shade600, size: 20),
-                        onPressed: () {
-                          // TODO: Implement logout
-                          context.go('/login');
+                        onPressed: () async {
+                          await ref.read(authProvider.notifier).signOut();
+                          if (context.mounted) {
+                            context.go('/login');
+                          }
                         },
                       ),
                     ],
@@ -241,9 +244,11 @@ class SideMenu extends HookConsumerWidget {
                       IconButton(
                         icon: Icon(Icons.logout,
                             color: Colors.grey.shade600, size: 20),
-                        onPressed: () {
-                          // TODO: Implement logout
-                          context.go('/login');
+                        onPressed: () async {
+                          await ref.read(authProvider.notifier).signOut();
+                          if (context.mounted) {
+                            context.go('/login');
+                          }
                         },
                       ),
                     ],

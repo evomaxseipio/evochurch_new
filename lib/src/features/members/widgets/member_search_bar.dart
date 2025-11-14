@@ -1,8 +1,10 @@
 // lib/src/features/members/widgets/member_search_bar.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class MemberSearchBar extends StatelessWidget {
+class MemberSearchBar extends HookConsumerWidget {
   final ValueNotifier<String> searchQuery;
 
   const MemberSearchBar({
@@ -11,7 +13,10 @@ class MemberSearchBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Simple controller - updates searchQuery directly when user types
+    final controller = useTextEditingController();
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -24,6 +29,7 @@ class MemberSearchBar extends StatelessWidget {
           children: [
             Expanded(
               child: TextField(
+                controller: controller,
                 decoration: InputDecoration(
                   hintText: 'Search members...',
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -41,16 +47,19 @@ class MemberSearchBar extends StatelessWidget {
                   ),
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  suffixIcon: searchQuery.value.isNotEmpty
+                  suffixIcon: controller.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear, size: 18),
                           onPressed: () {
+                            controller.clear();
                             searchQuery.value = '';
                           },
                         )
                       : null,
                 ),
                 onChanged: (value) {
+                  // Update searchQuery immediately when user types
+                  // This will trigger the search in member_list_desktop/mobile
                   searchQuery.value = value;
                 },
               ),

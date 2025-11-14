@@ -1,20 +1,23 @@
 // lib/src/features/auth/providers/auth_provider.dart
 
-import 'package:riverpod/riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../shared/providers/supabase_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/providers/api_client_provider.dart';
 import '../services/auth_service.dart';
+import '../models/user_model.dart';
+
+// Provider para preservar el email del login entre reconstrucciones
+final loginEmailProvider = StateProvider<String>((ref) => 'mseipio.evotechrd@gmail.com');
 
 // Provider del servicio
 final authServiceProvider = Provider<AuthService>((ref) {
-  final client = ref.watch(supabaseClientProvider);
+  final client = ref.watch(apiClientProvider);
   return AuthService(client);
 });
 
 // Stream del usuario actual
 final authUserProvider = StreamProvider<User?>((ref) {
   final service = ref.watch(authServiceProvider);
-  return service.authStateChanges.map((state) => state.session?.user);
+  return service.authStateChanges;
 });
 
 // Notifier de autenticación
@@ -33,7 +36,13 @@ class AuthNotifier extends AsyncNotifier<User?> {
         email: email,
         password: password,
       );
-      return response.user;
+      
+      if (response.success && response.data != null) {
+        // El servicio ya guardó los tokens y obtuvo el usuario
+        return service.currentUser;
+      } else {
+        throw Exception(response.message);
+      }
     });
   }
 

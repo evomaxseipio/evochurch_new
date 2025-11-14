@@ -63,7 +63,7 @@ class EvoModal {
                           ? theme.colorScheme.outline
                           : theme.colorScheme.onSurface.withAlpha(64),
                     ),
-                    color: isDark ? ColorScheme.dark().surface : ColorScheme.light().surface,
+                    color: isDark ? const ColorScheme.dark().surface : const ColorScheme.light().surface,
                             // theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(4),
                   ),
@@ -145,8 +145,8 @@ class EvoModal {
                         Divider(
                           height: 0,
                           color: isDark
-                              ? ColorScheme.dark().outline
-                              : ColorScheme.light().secondary.withAlpha(64),
+                              ? const ColorScheme.dark().outline
+                              : const ColorScheme.light().secondary.withAlpha(64),
                         ),
                         Container(
                           padding: const EdgeInsets.all(12),

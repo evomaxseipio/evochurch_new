@@ -24,7 +24,7 @@ class MemberMaintance extends HookConsumerWidget {
     Member? currentMember;
     final formKey = GlobalKey<FormState>();
     final profile = useState<Member?>(null);
-    final editMode = useState<String?>(null);
+    useState<String?>(null);
     final memberTextControllers =
         useState<Map<String, TextEditingController>>({});
     final addressTextControllers =
@@ -76,10 +76,10 @@ class MemberMaintance extends HookConsumerWidget {
 
           // Address Information
           final addressFields = {
-            'streetAddress': currentMember?.address!.streetAddress ?? '',
-            'cityState': currentMember?.address!.cityState ?? '',
-            'country': currentMember?.address!.country ?? '',
-            'stateProvince': currentMember?.address!.stateProvince ?? '',
+            'streetAddress': currentMember?.address.streetAddress ?? '',
+            'cityState': currentMember?.address.cityState ?? '',
+            'country': currentMember?.address.country ?? '',
+            'stateProvince': currentMember?.address.stateProvince ?? '',
           };
 
           addressFields.forEach((key, value) {
@@ -88,9 +88,9 @@ class MemberMaintance extends HookConsumerWidget {
 
           // Contact Information
           final contactFields = {
-            'phone': currentMember!.contact!.phone ?? '',
-            'mobilePhone': currentMember?.contact!.mobilePhone ?? '',
-            'email': currentMember?.contact!.email ?? '',
+            'phone': currentMember!.contact.phone ?? '',
+            'mobilePhone': currentMember?.contact.mobilePhone ?? '',
+            'email': currentMember?.contact.email ?? '',
           };
 
           contactFields.forEach((key, value) {
@@ -259,9 +259,14 @@ class MemberMaintance extends HookConsumerWidget {
                   children: [
                     // Personal Information Section
 
-                    const SizedBox(height: 20),
+                    EvoBox.h16,
                     buildInformationCard(
-                      'Personal Information',
+                      header: sectionHeader(
+                        context,
+                        icon: Icons.person_outline,
+                        title: 'Personal Information',
+                        subtitle: 'Basic member details',
+                      ),
                       [
                         // Name fields row
                         buildResponsiveRow([
@@ -279,18 +284,20 @@ class MemberMaintance extends HookConsumerWidget {
                           buildDateField('Date of Birth', 'dateOfBirth',
                               context, memberTextControllers.value,
                               isRequired: false),
-                          // buildDropdownField(
-                          //   'Gender',
-                          //   'gender',
-                          //   memberTextControllers.value,
-                          // ),
-                          // buildDropdownField(
-                          //   'Marital Status',
-                          //   'maritalStatus',
-                          //   memberTextControllers.value,
-                          // ),
+                          buildDropdownField(
+                            'Gender',
+                            'gender',
+                            memberTextControllers.value,
+                            items: ['Male', 'Female'],
+                          ),
+                          buildDropdownField(
+                            'Marital Status',
+                            'maritalStatus',
+                            memberTextControllers.value, 
+                            items: ['Single', 'Married', 'Divorced', 'Widowed'],
+                          ),
                         ]),
-                        const SizedBox(height: 16),
+                        EvoBox.h16,
 
                         // ID information row
                         buildResponsiveRow([
@@ -299,9 +306,11 @@ class MemberMaintance extends HookConsumerWidget {
                             'nationality',
                             memberTextControllers.value,
                           ),
-                          // buildDropdownField(
-                          //     'Id Type', 'idType', memberTextControllers.value,
-                          //     isRequired: false),
+                            buildDropdownField(
+                              'Id Type', 'idType', memberTextControllers.value,
+                              items: ['Passport', 'ID Card', 'Drivers License'],
+                              isRequired: false,
+                            ),
                           buildEditableField('Id number', 'idNumber',
                               memberTextControllers.value,
                               isRequired: false),
@@ -312,15 +321,15 @@ class MemberMaintance extends HookConsumerWidget {
                     const SizedBox(height: 32),
 
                     // Address Information Section
-                    sectionHeader(
-                      context,
-                      icon: Icons.location_on_outlined,
-                      title: 'Address Information',
-                      subtitle: 'Residential details',
-                    ),
-                    const SizedBox(height: 20),
+                    
+                    EvoBox.h16,
                     buildInformationCard(
-                      'Address Information',
+                      header: sectionHeader(
+                        context,
+                        icon: Icons.location_on_outlined,
+                        title: 'Address Information',
+                        subtitle: 'Residential details',
+                      ),
                       [
                         // Address row 1
                         buildResponsiveRow([
@@ -346,15 +355,15 @@ class MemberMaintance extends HookConsumerWidget {
                     const SizedBox(height: 32),
 
                     // Contact Information Section
-                    sectionHeader(
-                      context,
-                      icon: Icons.contact_phone_outlined,
-                      title: 'Contact Information',
-                      subtitle: 'Communication details',
-                    ),
+                    
                     const SizedBox(height: 20),
                     buildInformationCard(
-                      'Contact Information',
+                      header: sectionHeader(
+                        context,
+                        icon: Icons.contact_phone_outlined,
+                        title: 'Contact Information',
+                        subtitle: 'Communication details',
+                      ),
                       [
                         // Contact row
                         buildResponsiveRow([

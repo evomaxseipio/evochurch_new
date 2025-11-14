@@ -128,7 +128,7 @@ class ProfileView extends HookConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  member!.membershipRole!,
+                  member!.membershipRole,
                   style: const TextStyle(
                     fontSize: 12,
                     color: Colors.white,

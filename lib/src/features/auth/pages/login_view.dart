@@ -11,23 +11,41 @@ class LoginView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final emailController = useTextEditingController();
-    final passwordController = useTextEditingController();
+    // Obtener el email preservado del provider
+    final savedEmail = ref.watch(loginEmailProvider);
+    final emailController = useTextEditingController(text: savedEmail);
+    final passwordController = useTextEditingController(text: 'TempPass123!');
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final isPasswordVisible = useState(false);
+    final hasLoginError = useState(false);
+
+    // Sincronizar el email con el provider cuando el usuario escribe
+    useEffect(() {
+      void listener() {
+        ref.read(loginEmailProvider.notifier).state = emailController.text;
+      }
+      emailController.addListener(listener);
+      return () => emailController.removeListener(listener);
+    }, [emailController]);
 
     ref.listen(authProvider, (previous, next) {
       next.whenOrNull(
         data: (user) {
           if (user != null) {
+            // Login exitoso - limpiar el email guardado
+            ref.read(loginEmailProvider.notifier).state = '';
             context.go('/');
           }
         },
         error: (error, stack) {
+          // Solo limpiar la contraseña por seguridad, mantener el email
+          passwordController.clear();
+          hasLoginError.value = true;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error: $error'),
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
             ),
           );
         },
@@ -72,12 +90,34 @@ class LoginView extends HookConsumerWidget {
                   const SizedBox(height: 48),
                   TextFormField(
                     controller: emailController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.email),
+                      border: const OutlineInputBorder(),
+                      errorBorder: hasLoginError.value 
+                          ? const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.red),
+                            )
+                          : null,
+                      focusedErrorBorder: hasLoginError.value
+                          ? const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.red, width: 2),
+                            )
+                          : null,
+                      helperText: hasLoginError.value 
+                          ? 'Email preserved - please check your password'
+                          : null,
+                      helperStyle: TextStyle(
+                        color: hasLoginError.value ? Colors.orange : null,
+                      ),
                     ),
                     keyboardType: TextInputType.emailAddress,
+                    onChanged: (value) {
+                      // Reset error state when user starts typing
+                      if (hasLoginError.value) {
+                        hasLoginError.value = false;
+                      }
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your email';
@@ -111,8 +151,8 @@ class LoginView extends HookConsumerWidget {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
                       }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
+                      if (value.length < 8) {
+                        return 'Password must be at least 8 characters';
                       }
                       return null;
                     },
@@ -143,43 +183,44 @@ class LoginView extends HookConsumerWidget {
                           )
                         : const Text('Login'),
                   ),
-                  const SizedBox(height: 16),
-                  const Row(
-                    children: [
-                      Expanded(child: Divider()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('OR'),
-                      ),
-                      Expanded(child: Divider()),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: authState.isLoading
-                        ? null
-                        : () {
-                            ref.read(authProvider.notifier).signInWithGoogle();
-                          },
-                    icon: const Icon(Icons.g_mobiledata),
-                    label: const Text('Sign in with Google'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: authState.isLoading
-                        ? null
-                        : () {
-                            // ref.read(authProvider.notifier).signInWithApple();
-                          },
-                    icon: const Icon(Icons.apple),
-                    label: const Text('Sign in with Apple'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
+                  // OAuth buttons removed - not available in current API
+                  // const SizedBox(height: 16),
+                  // const Row(
+                  //   children: [
+                  //     Expanded(child: Divider()),
+                  //     Padding(
+                  //       padding: EdgeInsets.symmetric(horizontal: 16),
+                  //       child: Text('OR'),
+                  //     ),
+                  //     Expanded(child: Divider()),
+                  //   ],
+                  // ),
+                  // const SizedBox(height: 16),
+                  // OutlinedButton.icon(
+                  //   onPressed: authState.isLoading
+                  //       ? null
+                  //       : () {
+                  //           ref.read(authProvider.notifier).signInWithGoogle();
+                  //         },
+                  //   icon: const Icon(Icons.g_mobiledata),
+                  //   label: const Text('Sign in with Google'),
+                  //   style: OutlinedButton.styleFrom(
+                  //     padding: const EdgeInsets.symmetric(vertical: 12),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 8),
+                  // OutlinedButton.icon(
+                  //   onPressed: authState.isLoading
+                  //       ? null
+                  //       : () {
+                  //           // ref.read(authProvider.notifier).signInWithApple();
+                  //         },
+                  //   icon: const Icon(Icons.apple),
+                  //   label: const Text('Sign in with Apple'),
+                  //   style: OutlinedButton.styleFrom(
+                  //     padding: const EdgeInsets.symmetric(vertical: 12),
+                  //   ),
+                  // ),
                 ],
               ),
             ),

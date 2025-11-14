@@ -1,6 +1,7 @@
+import 'package:evochurch_new/src/features/members/widgets/personal_infomation_card.dart';
 import 'package:evochurch_new/src/features/members/widgets/section_header.dart';
 import 'package:evochurch_new/src/features/members/widgets/top_bar_menus.dart';
-import 'package:evochurch_new/src/shared/constants/sizedbox.dart';
+import 'package:evochurch_new/src/features/members/providers/members_provider.dart';
 import 'package:evochurch_new/src/shared/text_editing_controllers.dart';
 import 'package:evochurch_new/src/shared/utils/utils_index.dart';
 
@@ -15,14 +16,19 @@ class MembershipPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final formKey = useState(GlobalKey<FormState>());
-    // MembersViewModel viewModel =
-    //     ref.read(membersViewModelProvider);
+    final formKey = useMemoized(() => GlobalKey<FormState>());
+    final selectedMember = ref.watch(selectedMemberProvider);
+    final membershipNotifier = ref.watch(membershipNotifierProvider);
+    final memberRolesAsync = ref.watch(memberRolesProvider);
 
     final membershipTextControllers =
         useState<Map<String, TextEditingController>>({});
     final historyControllers = useState<Map<String, TextEditingController>>({});
-    final membershipData = useState<Map<String, dynamic>>({});
+
+    // Get membership data if member is selected
+    final membershipDataAsync = selectedMember != null
+        ? ref.watch(membershipDataProvider(selectedMember.memberId))
+        : null;
 
     disposeControllers() {
       for (var controller in membershipTextControllers.value.values) {
@@ -42,137 +48,164 @@ class MembershipPage extends HookConsumerWidget {
         historyControllers.value[field] = TextEditingController();
       }
 
-      // Fetch membership data
-      getMembershipData() async {
-        try {
-          // await viewModel.getMemberRoles();
-
-          // membershipData.value = await viewModel.getMembershipByMemberId(
-          //     viewModel.selectedMember!.memberId.toString());
-
-          if (membershipData.value['membership'].isNotEmpty) {
-            membershipTextControllers.value['baptismChurch']!.text =
-                membershipData.value['membership'][0]['baptismChurch'];
-            membershipTextControllers.value['baptismPastor']!.text =
-                membershipData.value['membership'][0]['baptismPastor'];
-            membershipTextControllers.value['membershipRole']!.text =
-                membershipData.value['membership'][0]['membershipRole'];
-            membershipTextControllers.value['baptismChurchCity']!.text =
-                membershipData.value['membership'][0]['baptismChurchCity'];
-            membershipTextControllers.value['baptismChurchCountry']!.text =
-                membershipData.value['membership'][0]['baptismChurchCountry'];
-            membershipTextControllers.value['baptismDate']!.text =
-                membershipData.value['membership'][0]['baptismDate'].toString();
-            membershipTextControllers.value['hasCredential']!.text =
-                membershipData.value['membership'][0]['hasCredential']
-                    .toString();
-            membershipTextControllers.value['isBaptizedInSpirit']!.text =
-                membershipData.value['membership'][0]['isBaptizedInSpirit']
-                    .toString();
-          } else {
-            membershipTextControllers.value['baptismChurch']!.text = '';
-            membershipTextControllers.value['baptismPastor']!.text = '';
-            membershipTextControllers.value['membershipRole']!.text = '';
-            membershipTextControllers.value['baptismChurchCity']!.text = '';
-            membershipTextControllers.value['baptismChurchCountry']!.text = '';
-            membershipTextControllers.value['baptismDate']!.text = '';
-            membershipTextControllers.value['hasCredential']!.text = 'false';
-            membershipTextControllers.value['isBaptizedInSpirit']!.text =
-                'false';
-          }
-        } catch (e) {
-          throw Exception('Failed to load members $e');
-        }
-      }
-
-      getMembershipData();
-
       return () {
         disposeControllers();
       };
     }, []);
 
+    // Populate controllers when membership data is loaded
+    useEffect(() {
+      if (membershipDataAsync != null) {
+        membershipDataAsync.when(
+          data: (data) {
+            // Use addPostFrameCallback to avoid modifying state during build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final membership = data['membership'];
+              if (membership != null && membership is List && membership.isNotEmpty) {
+                final membershipItem = membership[0];
+                membershipTextControllers.value['baptismChurch']?.text =
+                    membershipItem['baptismChurch']?.toString() ?? '';
+                membershipTextControllers.value['baptismPastor']?.text =
+                    membershipItem['baptismPastor']?.toString() ?? '';
+                membershipTextControllers.value['membershipRole']?.text =
+                    membershipItem['membershipRole']?.toString() ?? '';
+                membershipTextControllers.value['baptismChurchCity']?.text =
+                    membershipItem['baptismChurchCity']?.toString() ?? '';
+                membershipTextControllers.value['baptismChurchCountry']?.text =
+                    membershipItem['baptismChurchCountry']?.toString() ?? '';
+                membershipTextControllers.value['baptismDate']?.text =
+                    membershipItem['baptismDate']?.toString() ?? '';
+                membershipTextControllers.value['hasCredential']?.text =
+                    membershipItem['hasCredential']?.toString() ?? 'false';
+                membershipTextControllers.value['isBaptizedInSpirit']?.text =
+                    membershipItem['isBaptizedInSpirit']?.toString() ?? 'false';
+              } else {
+                // Initialize with empty/default values
+                membershipTextControllers.value['baptismChurch']?.text = '';
+                membershipTextControllers.value['baptismPastor']?.text = '';
+                membershipTextControllers.value['membershipRole']?.text = '';
+                membershipTextControllers.value['baptismChurchCity']?.text = '';
+                membershipTextControllers.value['baptismChurchCountry']?.text = '';
+                membershipTextControllers.value['baptismDate']?.text = '';
+                membershipTextControllers.value['hasCredential']?.text = 'false';
+                membershipTextControllers.value['isBaptizedInSpirit']?.text = 'false';
+              }
+            });
+          },
+          loading: () {},
+          error: (error, stack) {
+            debugPrint('Error loading membership data: $error');
+            // Use addPostFrameCallback to avoid modifying state during build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              // Initialize with empty/default values on error
+              membershipTextControllers.value['baptismChurch']?.text = '';
+              membershipTextControllers.value['baptismPastor']?.text = '';
+              membershipTextControllers.value['membershipRole']?.text = '';
+              membershipTextControllers.value['baptismChurchCity']?.text = '';
+              membershipTextControllers.value['baptismChurchCountry']?.text = '';
+              membershipTextControllers.value['baptismDate']?.text = '';
+              membershipTextControllers.value['hasCredential']?.text = 'false';
+              membershipTextControllers.value['isBaptizedInSpirit']?.text = 'false';
+            });
+          },
+        );
+      }
+      return null;
+    }, [membershipDataAsync]);
+
     updateMembership() async {
-      try {
-        if (!formKey.value.currentState!.validate()) {
+      if (selectedMember == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No member selected'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (!formKey.currentState!.validate()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.warning, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Please fill in all required fields.'),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        return;
+      }
+
+      // Prepare membership data
+      final membershipData = {
+        'baptismDate': membershipTextControllers.value['baptismDate']?.text.isNotEmpty == true
+            ? convertDateFormat(membershipTextControllers.value['baptismDate']!.text)
+            : null,
+        'baptismChurch': membershipTextControllers.value['baptismChurch']?.text ?? '',
+        'baptismPastor': membershipTextControllers.value['baptismPastor']?.text ?? '',
+        'membershipRole': membershipTextControllers.value['membershipRole']?.text ?? '',
+        'baptismChurchCity': membershipTextControllers.value['baptismChurchCity']?.text ?? '',
+        'baptismChurchCountry': membershipTextControllers.value['baptismChurchCountry']?.text ?? '',
+        'hasCredential': membershipTextControllers.value['hasCredential']?.text == 'true',
+        'isBaptizedInSpirit': membershipTextControllers.value['isBaptizedInSpirit']?.text == 'true',
+      };
+
+      // Update membership using provider
+      await ref.read(membershipNotifierProvider.notifier).updateMembership(
+        selectedMember.memberId,
+        membershipData,
+      );
+
+      // Show result message
+      if (!context.mounted) return;
+      
+      membershipNotifier.when(
+        data: (response) {
+          if (response['success'] == true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 12),
+                    Text('Membership updated successfully'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            );
+          }
+        },
+        loading: () {},
+        error: (error, stack) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.warning, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('Please fill in all required fields.'),
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('Error: ${error.toString()}')),
                 ],
               ),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+              backgroundColor: Colors.red,
             ),
           );
-        } else {
-          // TODO: Implement membership maintenance functionality
-          // final response = await viewModel.setMembershipMaintance({
-          //   'profileId': viewModel.selectedMember!.memberId,
-          //   'baptismDate': convertDateFormat(membershipTextControllers
-          //       .value['baptismDate']!.text
-          //       .toString()),
-          //   'baptismChurch':
-          //       membershipTextControllers.value['baptismChurch']!.text,
-          //   'baptismPastor':
-          //       membershipTextControllers.value['baptismPastor']!.text,
-          //   'membershipRole':
-          //       membershipTextControllers.value['membershipRole']!.text,
-          //   'baptismChurchCity':
-          //       membershipTextControllers.value['baptismChurchCity']!.text,
-          //   'baptismChurchCountry':
-          //       membershipTextControllers.value['baptismChurchCountry']!.text,
-          //   'hasCredential':
-          //       membershipTextControllers.value['hasCredential']!.text,
-          //   'isBaptizedInSpirit':
-          //       membershipTextControllers.value['isBaptizedInSpirit']!.text,
-          // });
+        },
+      );
 
-          if (!context.mounted) return;
-          // TODO: Show success message when functionality is implemented
-          // if (response['success'] == true) {
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     SnackBar(
-          //       content: const Row(
-          //         children: [
-          //           Icon(Icons.check_circle, color: Colors.white),
-          //           SizedBox(width: 12),
-          //           Text('Membership updated successfully'),
-          //         ],
-          //       ),
-          //       backgroundColor: Colors.green,
-          //       behavior: SnackBarBehavior.floating,
-          //       shape: RoundedRectangleBorder(
-          //         borderRadius: BorderRadius.circular(10),
-          //       ),
-          //     ),
-          //   );
-          // } else {
-          //   if (!context.mounted) return;
-          //   ScaffoldMessenger.of(context).showSnackBar(
-          //     SnackBar(
-          //       content: Row(
-          //         children: [
-          //           const Icon(Icons.error, color: Colors.white),
-          //           const SizedBox(width: 12),
-          //           Expanded(child: Text('Error: ${response['message']}')),
-          //         ],
-          //       ),
-          //       backgroundColor: Colors.red,
-          //     ),
-          //   );
-          // }
-          formKey.value.currentState!.save();
-        }
-      } catch (e) {
-        throw Exception('Failed to update membership $e');
-      }
+      formKey.currentState!.save();
     }
 
     return Column(
@@ -186,157 +219,128 @@ class MembershipPage extends HookConsumerWidget {
           subtitle: 'Membership details',
         ),
         ),
-        EvoBox.h16,
+        // EvoBox.h16,
         Expanded(
           child: Form(
-            key: formKey.value,
+            key: formKey,
             child: ListView(
                     padding: const EdgeInsets.all(24),
                     children: [
                       // Membership Status Card
-                      _buildStatusCard(context, membershipData.value),
+                      membershipDataAsync != null
+                          ? membershipDataAsync.when(
+                              data: (data) => _buildStatusCard(context, data),
+                              loading: () => const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(32.0),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                              error: (_, __) => _buildStatusCard(context, {}),
+                            )
+                          : _buildStatusCard(context, {}),
                       const SizedBox(height: 24),
 
                       // Baptism Information Section
-                      _buildSectionHeader(
-                        context,
-                        icon: Icons.water_drop_outlined,
-                        title: 'Baptism Information',
-                        subtitle: 'Water baptism details',
-                      ),
-                      const SizedBox(height: 20),
-                      Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(
-                            color:
-                                Theme.of(context).dividerColor.withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              buildResponsiveRow([
-                                buildEditableField(
-                                    'Baptism Church',
-                                    'baptismChurch',
-                                    membershipTextControllers.value),
-                                buildEditableField(
-                                    'Baptism Pastor',
-                                    'baptismPastor',
-                                    membershipTextControllers.value),
-                              ]),
-                              const SizedBox(height: 16),
-                              buildResponsiveRow([
-                                buildEditableField(
-                                    'Church City',
-                                    'baptismChurchCity',
-                                    membershipTextControllers.value),
-                                buildEditableField(
-                                    'Church Country',
-                                    'baptismChurchCountry',
-                                    membershipTextControllers.value),
-                              ]),
-                              const SizedBox(height: 16),
-                              buildResponsiveRow([
-                                buildDateField('Baptism Date', 'baptismDate',
-                                    context, membershipTextControllers.value,
-                                    isRequired: false),
-                              ]),
-                            ],
-                          ),
+                      buildInformationCard(
+                        [
+                          buildResponsiveRow([
+                            buildEditableField(
+                                'Baptism Church',
+                                'baptismChurch',
+                                membershipTextControllers.value),
+                            buildEditableField(
+                                'Baptism Pastor',
+                                'baptismPastor',
+                                membershipTextControllers.value),
+                          ]),
+                          const SizedBox(height: 16),
+                          buildResponsiveRow([
+                            buildEditableField(
+                                'Church City',
+                                'baptismChurchCity',
+                                membershipTextControllers.value),
+                            buildEditableField(
+                                'Church Country',
+                                'baptismChurchCountry',
+                                membershipTextControllers.value),
+                          ]),
+                          const SizedBox(height: 16),
+                          buildResponsiveRow([
+                            buildDateField('Baptism Date', 'baptismDate',
+                                context, membershipTextControllers.value,
+                                isRequired: false),
+                          ]),
+                        ],
+                        header: sectionHeader(
+                          context,
+                          icon: Icons.water_drop_outlined,
+                          title: 'Baptism Information',
+                          subtitle: 'Water baptism details',
                         ),
                       ),
 
                       const SizedBox(height: 24),
 
-                      // Membership Role Section
-                      _buildSectionHeader(
-                        context,
-                        icon: Icons.badge_outlined,
-                        title: 'Membership Role',
-                        subtitle: 'Current position in church',
-                      ),
-                      const SizedBox(height: 20),
-                      Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(
-                            color:
-                                Theme.of(context).dividerColor.withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        // child: Padding(
-                        //   padding: const EdgeInsets.all(20),
-                        //   child: Column(
-                        //     children: [
-                        //       buildDropdownField(
-                        //           'Membership Role',
-                        //           'membershipRole',
-                        //           membershipTextControllers.value,
-                        //           viewModel: viewModel),
-                        //     ],
-                        //   ),
-                        // ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Additional Information
-                      _buildSectionHeader(
-                        context,
-                        icon: Icons.info_outline,
-                        title: 'Additional Information',
-                        subtitle: 'Credentials and spiritual status',
-                      ),
-                      const SizedBox(height: 20),
-                      Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(
-                            color:
-                                Theme.of(context).dividerColor.withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              buildSwitchTile(
-                                  'Has Ministerial Credential',
-                                  'hasCredential',
-                                  context,
-                                  membershipTextControllers.value),
-                              const SizedBox(height: 16),
-                              buildSwitchTile(
-                                  'Baptized in the Holy Spirit',
-                                  'isBaptizedInSpirit',
-                                  context,
-                                  membershipTextControllers.value),
-                            ],
-                          ),
+                      // Membership Role and Additional Information
+                      buildInformationCard(
+                        [
+                          buildResponsiveRow([
+                            memberRolesAsync.when(
+                              data: (roles) => buildDropdownField(
+                                'Membership Role',
+                                'membershipRole',
+                                membershipTextControllers.value,
+                                items: roles,
+                              ),
+                              loading: () => const CircularProgressIndicator(),
+                              error: (_, __) => buildEditableField(
+                                'Membership Role',
+                                'membershipRole',
+                                membershipTextControllers.value,
+                              ),
+                            ),
+                            buildSwitchTile(
+                                'Has Ministerial Credential',
+                                'hasCredential',
+                                context,
+                                membershipTextControllers.value),
+                            buildSwitchTile(
+                                'Baptized in the Holy Spirit',
+                                'isBaptizedInSpirit',
+                                context,
+                                membershipTextControllers.value),
+                          ]),
+                        ],
+                        header: sectionHeader(
+                          context,
+                          icon: Icons.badge_outlined,
+                          title: 'Membership Role & Additional Information',
+                          subtitle: 'Current position, credentials and spiritual status',
                         ),
                       ),
 
                       const SizedBox(height: 32),
 
                       // Membership History Section
-                      if (membershipData.value['membership'] != null &&
-                          membershipData.value['membership'].isNotEmpty &&
-                          membershipData.value['membership'][0]
-                                  ['membershipHistory'] !=
-                              null)
-                        _buildHistorySection(
-                          context,
-                          membershipData.value['membership'][0]
-                              ['membershipHistory'],
+                      if (membershipDataAsync != null)
+                        membershipDataAsync.when(
+                          data: (data) {
+                            final membership = data['membership'];
+                            if (membership != null &&
+                                membership is List &&
+                                membership.isNotEmpty &&
+                                membership[0] is Map &&
+                                membership[0]['membershipHistory'] != null) {
+                              return _buildHistorySection(
+                                context,
+                                membership[0]['membershipHistory'],
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
                         ),
                     ],
                   ),
@@ -349,7 +353,8 @@ class MembershipPage extends HookConsumerWidget {
   Widget _buildStatusCard(BuildContext context, Map<String, dynamic> data) {
     bool hasMembership = data.isNotEmpty &&
         data['membership'] != null &&
-        data['membership'].isNotEmpty;
+        data['membership'] is List &&
+        (data['membership'] as List).isNotEmpty;
 
     return Card(
       elevation: 2,
@@ -357,7 +362,7 @@ class MembershipPage extends HookConsumerWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
@@ -365,7 +370,7 @@ class MembershipPage extends HookConsumerWidget {
             end: Alignment.bottomRight,
             colors: hasMembership
                 ? [Colors.green.shade400, Colors.green.shade600]
-                : [Colors.orange.shade400, Colors.orange.shade600],
+                : [Colors.orange.shade600, Colors.orange.shade400],
           ),
         ),
         child: Row(
@@ -373,7 +378,7 @@ class MembershipPage extends HookConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -401,7 +406,7 @@ class MembershipPage extends HookConsumerWidget {
                         ? 'Member information is complete'
                         : 'Complete the form to activate membership',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 14,
                     ),
                   ),
@@ -460,6 +465,7 @@ class MembershipPage extends HookConsumerWidget {
     );
   }
 
+
   Widget _buildHistorySection(BuildContext context, List<dynamic> history) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,7 +482,7 @@ class MembershipPage extends HookConsumerWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(
-              color: Theme.of(context).dividerColor.withOpacity(0.2),
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -491,7 +497,7 @@ class MembershipPage extends HookConsumerWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -510,7 +516,7 @@ class MembershipPage extends HookConsumerWidget {
                     ? Chip(
                         label: Text(item['reason']),
                         backgroundColor:
-                            Theme.of(context).primaryColor.withOpacity(0.1),
+                            Theme.of(context).primaryColor.withValues(alpha: 0.1),
                       )
                     : null,
               );
@@ -521,3 +527,4 @@ class MembershipPage extends HookConsumerWidget {
     );
   }
 }
+

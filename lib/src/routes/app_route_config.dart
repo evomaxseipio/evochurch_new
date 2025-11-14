@@ -1,15 +1,17 @@
 // ============================================
-// 3. ROUTES CON SHELLROUTE - app_route_config.dart
+// 3. ROUTES WITH SHELLROUTE - app_route_config.dart
 // lib/src/routes/app_route_config.dart
 // ============================================
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:riverpod/riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/pages/login_view.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/dashboard/pages/dashboard_view.dart';
 import '../features/members/pages/member_list.dart';
+import '../features/members/pages/profile_view.dart';
+import '../features/members/providers/members_provider.dart';
 import '../layout/admin_scaffold.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -32,13 +34,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Login route (sin layout)
+      // Login route (without layout)
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginView(),
       ),
 
-      // Shell route (con layout persistente)
+      // Shell route (with persistent layout)
       ShellRoute(
         builder: (context, state, child) {
           return AdminScaffold(body: child);
@@ -85,12 +87,55 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: PlaceholderPage(title: 'Settings'),
             ),
-          ),
+          ),         
           GoRoute(
             path: '/members/profile',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: PlaceholderPage(title: 'Profile'),
-            ),
+            redirect: (context, state) {
+              // Check if there's a selected member before showing the page
+              // This is done in the redirect to avoid construction issues
+              return null; // Allow navigation, Consumer will handle the null case
+            },
+            pageBuilder: (context, state) {
+              return NoTransitionPage(
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final selectedMember = ref.watch(selectedMemberProvider);
+                    if (selectedMember == null) {
+                      // If no member is selected, show message and button to go back
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.person_off, size: 64, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No member selected',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Please select a member from the list to view their profile.',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: () => context.go('/members'),
+                                icon: const Icon(Icons.arrow_back),
+                                label: const Text('Back to Members'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    return ProfileView(member: selectedMember);
+                  },
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -98,7 +143,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-// Página temporal para rutas sin implementar
+// Temporary page for unimplemented routes
 class PlaceholderPage extends StatelessWidget {
   final String title;
 
